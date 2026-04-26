@@ -66,7 +66,7 @@ try:
     # ── Low stock list ────────────────────────────────────────────────────────
     with col_b:
         st.subheader("Stock Health")
-        threshold = cfg["inventory"]["low_stock_threshold"]
+        threshold = cfg["display"]["low_stock_threshold"]
         df_prod = pd.DataFrame(products)
         if not df_prod.empty:
             df_prod["quantity"] = pd.to_numeric(df_prod["quantity"], errors="coerce").fillna(0)

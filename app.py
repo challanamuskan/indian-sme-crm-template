@@ -40,7 +40,7 @@ try:
     products  = sb.table("products").select("id,quantity", count="exact").execute()
     customers = sb.table("customers").select("id", count="exact").execute()
     payments_pending = sb.table("payments").select("id,amount").eq("status", "pending").execute()
-    low_stock = [r for r in (products.data or []) if r.get("quantity", 99) < cfg["inventory"]["low_stock_threshold"]]
+    low_stock = [r for r in (products.data or []) if r.get("quantity", 99) < cfg["display"]["low_stock_threshold"]]
 
     # monthly revenue
     first_of_month = datetime.date.today().replace(day=1).isoformat()

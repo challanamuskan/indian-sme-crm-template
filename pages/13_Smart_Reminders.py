@@ -43,7 +43,7 @@ try:
                 })
 
     # ── Low stock reorder ─────────────────────────────────────────────────────
-    threshold = cfg["inventory"]["low_stock_threshold"]
+    threshold = cfg["display"]["low_stock_threshold"]
     for p in products:
         qty = int(p.get("quantity", 99))
         if qty < threshold:
