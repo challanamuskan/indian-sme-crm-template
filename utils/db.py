@@ -12,7 +12,7 @@ from typing import Any
 @st.cache_resource
 def get_client() -> Client:
     url = st.secrets["SUPABASE_URL"]
-    key = st.secrets["SUPABASE_ANON_KEY"]
+    key = st.secrets["SUPABASE_KEY"]
     return create_client(url, key)
 
 
