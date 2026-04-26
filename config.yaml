@@ -1,0 +1,43 @@
+# ─────────────────────────────────────────────
+#  Indian SME CRM — Business Configuration
+#  Edit this file to customise for your business
+# ─────────────────────────────────────────────
+
+business:
+  name: "Your Business Name"
+  tagline: "Quality Products, Trusted Service"
+  gstin: "XXAAAAA0000A1Z5"          # Your GSTIN (14-char)
+  pan: "AAAAA0000A"                 # PAN (optional)
+  msme_udyam: ""                   # Udyam registration no. (optional)
+  currency: "₹"
+  currency_code: "INR"
+  logo_url: ""                     # Paste hosted image URL or leave blank
+  address_line1: "123, Main Market"
+  address_line2: ""
+  city: "Jaipur"
+  state: "Rajasthan"
+  pincode: "302001"
+  phone: "+91-9999999999"
+  email: "info@yourbusiness.com"
+  website: ""
+
+features:
+  whatsapp_enabled: true           # WhatsApp click-to-chat on orders/payments
+  gmail_enabled: false             # Requires Gmail API setup — see docs/gmail_setup.md
+  pdf_invoices: true               # GST invoice PDF generation
+  website_analytics_url: ""        # Plausible / Umami / GA embed URL
+  compliance_reminders: true       # GST / TDS deadline alerts
+
+gst:
+  default_rate: 18                 # Default GST % (can override per product)
+  composition_scheme: false        # Set true if on composition scheme
+
+auth:
+  admin_username: "admin"
+  # Password is set as a Supabase secret / Streamlit secret — NOT here
+
+display:
+  items_per_page: 25
+  date_format: "%d-%m-%Y"
+  fiscal_year_start_month: 4       # April (Indian FY)
+  low_stock_threshold: 10          # Alert when qty drops below this
