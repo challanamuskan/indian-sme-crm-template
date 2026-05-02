@@ -1,6 +1,11 @@
 """pages/15_Email_Tracker.py — Email outreach log, follow-up tracker, templates."""
 
 import streamlit as st
+if not st.session_state.get("authenticated", False):
+    st.error("\U0001f512 Please login first.")
+    st.stop()
+
+import streamlit as st
 import pandas as pd
 from datetime import date, timedelta
 from utils.config_loader import load_config

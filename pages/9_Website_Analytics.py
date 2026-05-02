@@ -5,6 +5,11 @@ Also shows website health status and uptime.
 """
 
 import streamlit as st
+if not st.session_state.get("authenticated", False):
+    st.error("\U0001f512 Please login first.")
+    st.stop()
+
+import streamlit as st
 from utils.config_loader import load_config
 
 cfg = load_config()

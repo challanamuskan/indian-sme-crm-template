@@ -4,6 +4,11 @@ GST filing deadlines, TDS, Income Tax, MSME compliance tracker.
 """
 
 import streamlit as st
+if not st.session_state.get("authenticated", False):
+    st.error("\U0001f512 Please login first.")
+    st.stop()
+
+import streamlit as st
 import calendar
 from datetime import date
 from utils.config_loader import load_config

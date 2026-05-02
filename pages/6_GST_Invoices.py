@@ -4,6 +4,11 @@ Create, preview, and download GST-compliant invoices as PDF.
 """
 
 import streamlit as st
+if not st.session_state.get("authenticated", False):
+    st.error("\U0001f512 Please login first.")
+    st.stop()
+
+import streamlit as st
 from datetime import date
 from utils.config_loader import load_config
 from utils.db import get_all_records, insert_record

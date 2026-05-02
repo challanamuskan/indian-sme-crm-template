@@ -1,6 +1,11 @@
 """pages/17_Promotions.py — WhatsApp bulk broadcast, offer builder, seasonal campaigns."""
 
 import streamlit as st
+if not st.session_state.get("authenticated", False):
+    st.error("\U0001f512 Please login first.")
+    st.stop()
+
+import streamlit as st
 import urllib.parse
 import pandas as pd
 from utils.config_loader import load_config

@@ -1,6 +1,11 @@
 """pages/16_Website_Manager.py — Website uptime, lead capture, analytics embed, SEO checklist."""
 
 import streamlit as st
+if not st.session_state.get("authenticated", False):
+    st.error("\U0001f512 Please login first.")
+    st.stop()
+
+import streamlit as st
 import urllib.request
 from utils.config_loader import load_config
 
