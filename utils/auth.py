@@ -2,41 +2,48 @@
 
 import streamlit as st
 
-# ─── Temp Demo Accounts (7 accounts × 5 uses each) ────────────
-TEMP_ACCOUNTS = {
-    "demo_client1": {"password": "client1pass", "role": "viewer", "label": "Client Preview 1", "max_uses": 5},
-    "demo_client2": {"password": "client2pass", "role": "viewer", "label": "Client Preview 2", "max_uses": 5},
-    "demo_client3": {"password": "client3pass", "role": "viewer", "label": "Client Preview 3", "max_uses": 5},
-    "demo_client4": {"password": "client4pass", "role": "viewer", "label": "Client Preview 4", "max_uses": 5},
-    "demo_client5": {"password": "client5pass", "role": "viewer", "label": "Client Preview 5", "max_uses": 5},
-    "demo_client6": {"password": "client6pass", "role": "viewer", "label": "Client Preview 6", "max_uses": 5},
-    "demo_client7": {"password": "client7pass", "role": "viewer", "label": "Client Preview 7", "max_uses": 5},
-}
-
-_DEFAULT_USERS = {
-    "admin": {"password": "demo123", "role": "admin"},
-    "staff": {"password": "staff123", "role": "staff"},
-}
+_TEMP_ACCOUNT_KEYS = [f"demo_client{i}" for i in range(1, 8)]
+_TEMP_MAX_USES = 5
 
 
-def _get_users() -> dict:
+def _get_temp_password(username: str) -> str:
+    key = username.upper() + "_PASS"
     try:
-        username = st.secrets.get("ADMIN_USERNAME", "admin")
-        password = st.secrets.get("ADMIN_PASSWORD", "demo123")
-        users = {username: {"password": password, "role": "admin"}}
-        if st.secrets.get("STAFF_USERNAME"):
-            users[st.secrets["STAFF_USERNAME"]] = {
-                "password": st.secrets.get("STAFF_PASSWORD", "staff123"),
-                "role": "staff",
-            }
-        return users
+        return st.secrets.get(key, f"{username}pass")
     except Exception:
-        return _DEFAULT_USERS
+        return f"{username}pass"
+
+
+def _build_temp_accounts() -> dict:
+    return {
+        u: {"password": _get_temp_password(u), "role": "viewer",
+            "label": f"Client Preview {i+1}", "max_uses": _TEMP_MAX_USES}
+        for i, u in enumerate(_TEMP_ACCOUNT_KEYS)
+    }
+
+
+def _get_permanent_users() -> dict:
+    def s(key, default):
+        try:
+            return st.secrets.get(key, default)
+        except Exception:
+            return default
+
+    users = {}
+    # Admin
+    users[s("ADMIN_USERNAME", "admin")] = {
+        "password": s("ADMIN_PASSWORD", "demo123"), "role": "admin"
+    }
+    # Staff — always registered so staff login works without secrets configured
+    users[s("STAFF_USERNAME", "staff")] = {
+        "password": s("STAFF_PASSWORD", "staff123"), "role": "staff"
+    }
+    return users
 
 
 def _get_usage_counts() -> dict:
     if "_temp_usage" not in st.session_state:
-        st.session_state._temp_usage = {k: 0 for k in TEMP_ACCOUNTS}
+        st.session_state._temp_usage = {k: 0 for k in _TEMP_ACCOUNT_KEYS}
     return st.session_state._temp_usage
 
 
@@ -47,11 +54,17 @@ def _increment_usage(username: str):
 
 
 def _uses_remaining(username: str) -> int:
-    if username not in TEMP_ACCOUNTS:
-        return 999
-    counts = _get_usage_counts()
-    used = counts.get(username, 0)
-    return max(0, TEMP_ACCOUNTS[username]["max_uses"] - used)
+    return max(0, _TEMP_MAX_USES - _get_usage_counts().get(username, 0))
+
+
+def _do_login(username, role, is_demo=False, uses_remaining=0):
+    st.session_state.update({
+        "authenticated": True, "logged_in": True,
+        "username": username, "role": role,
+    })
+    if is_demo:
+        st.session_state["is_demo"] = True
+        st.session_state["demo_uses_remaining"] = uses_remaining
 
 
 def check_login() -> bool:
@@ -61,99 +74,65 @@ def check_login() -> bool:
 def render_login_page(cfg: dict = None):
     biz_name = (cfg or {}).get("business", {}).get("name", "SME CRM")
     st.markdown(f"## 🏪 {biz_name}")
+    st.markdown("#### Login to continue")
 
-    col_main, col_side = st.columns([2, 1])
+    with st.form("login_form"):
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
+        submitted = st.form_submit_button("Login", use_container_width=True)
 
-    with col_main:
-        st.markdown("#### Login")
-        with st.form("login_form"):
-            username = st.text_input("Username")
-            password = st.text_input("Password", type="password")
-            submitted = st.form_submit_button("Login", use_container_width=True)
+    if submitted:
+        # Check permanent users (admin + staff)
+        perm = _get_permanent_users()
+        if username in perm and perm[username]["password"] == password:
+            _do_login(username, perm[username]["role"])
+            st.rerun()
+            return
 
-        if submitted:
-            # Check permanent users
-            users = _get_users()
-            user = users.get(username)
-            if user and user["password"] == password:
-                st.session_state["authenticated"] = True
-                st.session_state["username"] = username
-                st.session_state["role"] = user["role"]
-                st.session_state["logged_in"] = True
+        # Check temp demo accounts
+        if username in _TEMP_ACCOUNT_KEYS:
+            temp = _build_temp_accounts()
+            if temp[username]["password"] == password:
+                remaining = _uses_remaining(username)
+                if remaining <= 0:
+                    st.error(f"❌ Demo account **{username}** expired — all {_TEMP_MAX_USES} uses used.")
+                    st.info("Contact admin for a fresh demo link.")
+                    return
+                _increment_usage(username)
+                _do_login(username, "viewer", is_demo=True,
+                          uses_remaining=_uses_remaining(username))
                 st.rerun()
                 return
 
-            # Check temp accounts
-            if username in TEMP_ACCOUNTS:
-                temp = TEMP_ACCOUNTS[username]
-                if temp["password"] == password:
-                    remaining = _uses_remaining(username)
-                    if remaining <= 0:
-                        st.error(f"❌ Demo account **{username}** has expired (5/5 uses used).")
-                        st.info("Contact us to request a new demo access link.")
-                        return
-                    _increment_usage(username)
-                    remaining_after = _uses_remaining(username)
-                    st.session_state["authenticated"] = True
-                    st.session_state["username"] = username
-                    st.session_state["role"] = "viewer"
-                    st.session_state["logged_in"] = True
-                    st.session_state["is_demo"] = True
-                    st.session_state["demo_uses_remaining"] = remaining_after
-                    st.rerun()
-                    return
+        st.error("❌ Invalid username or password.")
 
-            st.error("❌ Invalid credentials.")
-            st.caption("Demo: username **admin** / password **demo123**")
-
-    with col_side:
-        st.markdown("#### 🔑 Client Demo Access")
-        st.caption("7 preview accounts. Each gets **5 logins**.")
-        st.markdown("""
-| Account | Password |
-|---------|----------|
-| `demo_client1` | `client1pass` |
-| `demo_client2` | `client2pass` |
-| `demo_client3` | `client3pass` |
-| `demo_client4` | `client4pass` |
-| `demo_client5` | `client5pass` |
-| `demo_client6` | `client6pass` |
-| `demo_client7` | `client7pass` |
-""")
-        st.caption("⚡ Admin: `admin` / `demo123`")
-        counts = _get_usage_counts()
-        active = sum(1 for k in TEMP_ACCOUNTS if counts.get(k, 0) < TEMP_ACCOUNTS[k]["max_uses"])
-        st.metric("Active demo accounts", f"{active}/7")
+    st.caption("Contact the admin for login credentials.")
 
 
 def render_admin_temp_accounts():
-    """Admin panel to view/reset temp account usage."""
     st.subheader("🔑 Demo Account Manager")
     counts = _get_usage_counts()
-    rows = []
-    for acct, cfg in TEMP_ACCOUNTS.items():
-        used = counts.get(acct, 0)
-        remaining = max(0, cfg["max_uses"] - used)
-        rows.append({
-            "Account": acct,
-            "Label": cfg["label"],
-            "Used": used,
-            "Remaining": remaining,
-            "Status": "✅ Active" if remaining > 0 else "❌ Expired"
-        })
+    rows = [{"Account": u, "Used": f"{counts.get(u,0)}/{_TEMP_MAX_USES}",
+             "Remaining": _uses_remaining(u),
+             "Status": "✅ Active" if _uses_remaining(u) > 0 else "❌ Expired"}
+            for u in _TEMP_ACCOUNT_KEYS]
     import pandas as pd
     st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
 
-    if st.button("🔄 Reset All Demo Accounts", type="secondary"):
-        st.session_state._temp_usage = {k: 0 for k in TEMP_ACCOUNTS}
-        st.success("✅ All 7 accounts reset to 5 uses each!")
+    col1, col2 = st.columns(2)
+    if col1.button("🔄 Reset ALL", type="secondary"):
+        st.session_state._temp_usage = {k: 0 for k in _TEMP_ACCOUNT_KEYS}
+        st.success("✅ All 7 accounts reset!")
+        st.rerun()
+    acct = col2.selectbox("Reset one", ["— select —"] + _TEMP_ACCOUNT_KEYS)
+    if acct != "— select —" and st.button("Reset Selected"):
+        st.session_state._temp_usage[acct] = 0
+        st.success(f"✅ {acct} reset!")
         st.rerun()
 
-    acct_to_reset = st.selectbox("Reset single account", ["— select —"] + list(TEMP_ACCOUNTS.keys()))
-    if acct_to_reset != "— select —" and st.button("Reset Selected"):
-        st.session_state._temp_usage[acct_to_reset] = 0
-        st.success(f"✅ {acct_to_reset} reset!")
-        st.rerun()
+    st.divider()
+    st.caption("Set custom passwords in Streamlit secrets:")
+    st.code("DEMO_CLIENT1_PASS = \"your-pass\"\nDEMO_CLIENT2_PASS = \"pass2\"\n# ... up to DEMO_CLIENT7_PASS", language="toml")
 
 
 def require_admin():

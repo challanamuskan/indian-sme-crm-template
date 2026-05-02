@@ -17,26 +17,51 @@
 
 63 million Indian SMEs run on paper registers, WhatsApp threads, and Excel files. Most can't afford ₹5,000/month SaaS. This platform gives them a **complete digital business OS** — CRM, marketing, finance, supply chain, content, and global reach — deployable in under 30 minutes, free to self-host.
 
-**Built from a live production deployment** serving a 30-year-old textile machinery business in Jaipur — 2000+ products, real orders, real customers. Saves the client **12 hours/week**. Client data removed. All logic preserved and expanded.
+**Built from a live production deployment** serving a 30-year-old textile machinery business in Jaipur — 2000+ products, real orders, real customers. Saves the client **12 hours/week**.
 
 ---
 
-## 🔑 Demo Login
+## 🔐 Login & Access Control
 
-| Role | Username | Password | Access |
-|------|----------|----------|--------|
-| **Admin** | `admin` | `demo123` | Full platform |
-| **Staff** | `staff` | `staff123` | All modules |
-| **Client Demo 1** | `demo_client1` | `client1pass` | View-only · 5 uses |
-| **Client Demo 2** | `demo_client2` | `client2pass` | View-only · 5 uses |
-| **Client Demo 3** | `demo_client3` | `client3pass` | View-only · 5 uses |
-| **Client Demo 4** | `demo_client4` | `client4pass` | View-only · 5 uses |
-| **Client Demo 5** | `demo_client5` | `client5pass` | View-only · 5 uses |
-| **Client Demo 6** | `demo_client6` | `client6pass` | View-only · 5 uses |
-| **Client Demo 7** | `demo_client7` | `client7pass` | View-only · 5 uses |
+> **All credentials are set via Streamlit secrets — never committed to the repo.**
 
-> 🔒 All pages are login-protected. Direct URL access without login shows error and stops render.
-> 📊 Each temp account tracks usage. Admin can reset via the Demo Account Manager.
+### Roles
+
+| Role | Access |
+|------|--------|
+| `admin` | Full platform + demo account manager |
+| `staff` | All modules |
+| `viewer` | Read-only (assigned to demo accounts) |
+
+### Setting credentials (Streamlit Cloud → App Settings → Secrets)
+
+```toml
+# Admin
+ADMIN_USERNAME = "admin"
+ADMIN_PASSWORD = "your-secure-password"
+
+# Staff
+STAFF_USERNAME = "staff"
+STAFF_PASSWORD = "your-staff-password"
+
+# 7 client demo accounts (each gets 5 logins, view-only)
+DEMO_CLIENT1_PASS = "set-your-own"
+DEMO_CLIENT2_PASS = "set-your-own"
+DEMO_CLIENT3_PASS = "set-your-own"
+DEMO_CLIENT4_PASS = "set-your-own"
+DEMO_CLIENT5_PASS = "set-your-own"
+DEMO_CLIENT6_PASS = "set-your-own"
+DEMO_CLIENT7_PASS = "set-your-own"
+```
+
+### Demo accounts for client previews
+
+- 7 temporary accounts: `demo_client1` through `demo_client7`
+- Each account gets **5 logins** — usage tracked automatically
+- Admin can reset usage counts from the Demo Account Manager page
+- Share `demo_clientN` + the password you set in secrets with your client — **never share your admin password**
+
+> 🔒 Every page enforces login. Direct URL access without a session shows an error and stops rendering.
 
 ---
 
@@ -45,13 +70,13 @@
 ### 1. 📊 CRM & Customer Management
 Full customer lifecycle — leads, orders, payments, follow-ups, WhatsApp integration.
 
-### 2. 📣 Marketing & Growth *(new)*
+### 2. 📣 Marketing & Growth
 Campaign tracker with ROI, monthly growth KPIs, content calendar, 8 message templates, customer segmentation (Champions / Loyal / At Risk / Lost).
 
-### 3. 💰 Finance & Accounting *(new)*
-P&L dashboard, transaction ledger, accounts payable/receivable, GST summary (output vs input), cumulative cashflow chart.
+### 3. 💰 Finance & Accounting
+P&L dashboard, transaction ledger, accounts payable/receivable, GST summary (output vs input tax), cumulative cashflow chart.
 
-### 4. 🌐 Global Supply Chain & Inventory *(new)*
+### 4. 🌐 Global Supply Chain & Inventory
 Industry trade map (8 industries) → finds global buyers + suppliers simultaneously. Dual-level inventory: raw materials + finished goods. Self-marketing pitch generator. Export market map. Trade portal directory.
 
 ### 5. 📦 Stock & Operations
@@ -64,7 +89,7 @@ GSTR-1/3B/TDS deadlines, e-Way bill checker, GST rate finder, advance tax calend
 Smart reminders from live data, business health score, BI dashboard.
 
 ### 8. 🏢 Staff & Access Control
-Role-based auth (Admin/Staff/Viewer), 7 temp demo accounts × 5 uses each, usage tracking.
+Role-based auth (Admin/Staff/Viewer), 7 temp demo accounts × 5 uses each, admin reset panel.
 
 ---
 
@@ -92,18 +117,12 @@ business:
 ```
 streamlit.io/cloud → New App → connect repo → main file: app.py
 ```
-Add secrets:
-```toml
-SUPABASE_URL = "https://xxxx.supabase.co"
-SUPABASE_KEY = "your-anon-key"
-ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD = "yourpassword"
-```
+Add secrets (see Login section above).
 
-### 5. Inject auth guard into all pages (one-time)
+### 5. Inject auth guard into all pages (one-time, run locally)
 ```bash
 python patch_auth.py
-git add -A && git commit -m "security: add auth guard to all pages" && git push
+git add -A && git commit -m "security: auth guard all pages" && git push
 ```
 
 Done. ✅
@@ -116,7 +135,7 @@ Done. ✅
 indian-sme-crm-template/
 ├── app.py                          # Entry point + auth + home dashboard
 ├── config.yaml                     # Business config
-├── patch_auth.py                   # One-time script: injects login guard into all pages
+├── patch_auth.py                   # One-time: injects login guard into all pages
 ├── pages/
 │   ├── 06_GST_Invoices.py
 │   ├── 08_Ad_Tracker.py
@@ -133,7 +152,7 @@ indian-sme-crm-template/
 │   ├── 19_Finance_Accounting.py    # ★ P&L + GST + cashflow
 │   └── 20_Marketing_Growth.py      # ★ Campaigns + growth metrics + content
 ├── utils/
-│   ├── auth.py                     # Auth + 7 temp demo accounts
+│   ├── auth.py                     # Auth + 7 temp demo accounts (secrets-based)
 │   ├── auth_guard.py               # Single-import login guard for pages
 │   ├── db.py
 │   ├── config_loader.py
