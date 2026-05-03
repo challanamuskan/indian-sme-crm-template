@@ -21,50 +21,6 @@
 
 ---
 
-## 🔐 Login & Access Control
-
-> **All credentials are set via Streamlit secrets — never committed to the repo.**
-
-### Roles
-
-| Role | Access |
-|------|--------|
-| `admin` | Full platform + demo account manager |
-| `staff` | All modules |
-| `viewer` | Read-only (assigned to demo accounts) |
-
-### Setting credentials (Streamlit Cloud → App Settings → Secrets)
-
-```toml
-# Admin
-ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD = "your-secure-password"
-
-# Staff
-STAFF_USERNAME = "staff"
-STAFF_PASSWORD = "your-staff-password"
-
-# 7 client demo accounts (each gets 5 logins, view-only)
-DEMO_CLIENT1_PASS = "set-your-own"
-DEMO_CLIENT2_PASS = "set-your-own"
-DEMO_CLIENT3_PASS = "set-your-own"
-DEMO_CLIENT4_PASS = "set-your-own"
-DEMO_CLIENT5_PASS = "set-your-own"
-DEMO_CLIENT6_PASS = "set-your-own"
-DEMO_CLIENT7_PASS = "set-your-own"
-```
-
-### Demo accounts for client previews
-
-- 7 temporary accounts: `demo_client1` through `demo_client7`
-- Each account gets **5 logins** — usage tracked automatically
-- Admin can reset usage counts from the Demo Account Manager page
-- Share `demo_clientN` + the password you set in secrets with your client — **never share your admin password**
-
-> 🔒 Every page enforces login. Direct URL access without a session shows an error and stops rendering.
-
----
-
 ## 🚀 What's Inside: 8 Growth Pillars
 
 ### 1. 📊 CRM & Customer Management
@@ -77,7 +33,7 @@ Campaign tracker with ROI, monthly growth KPIs, content calendar, 8 message temp
 P&L dashboard, transaction ledger, accounts payable/receivable, GST summary (output vs input tax), cumulative cashflow chart.
 
 ### 4. 🌐 Global Supply Chain & Inventory
-Industry trade map (8 industries) → finds global buyers + suppliers simultaneously. Dual-level inventory: raw materials + finished goods. Self-marketing pitch generator. Export market map. Trade portal directory.
+Industry trade map (8 industries) — finds global buyers + suppliers simultaneously. Dual-level inventory: raw materials + finished goods. Self-marketing pitch generator. Export market map.
 
 ### 5. 📦 Stock & Operations
 Live inventory, reorder alerts, supplier mapping, e-Way bill checker.
@@ -89,7 +45,7 @@ GSTR-1/3B/TDS deadlines, e-Way bill checker, GST rate finder, advance tax calend
 Smart reminders from live data, business health score, BI dashboard.
 
 ### 8. 🏢 Staff & Access Control
-Role-based auth (Admin/Staff/Viewer), 7 temp demo accounts × 5 uses each, admin reset panel.
+Role-based auth, 7 temp client demo accounts with usage limits, admin reset panel.
 
 ---
 
@@ -98,34 +54,30 @@ Role-based auth (Admin/Staff/Viewer), 7 temp demo accounts × 5 uses each, admin
 ### 1. Fork this repo
 
 ### 2. Create free Supabase project
-```
-supabase.com → New Project → copy URL + anon key
-```
-Run `sample_data/seed.sql` in Supabase SQL Editor.
+Go to [supabase.com](https://supabase.com) → New Project → copy URL + anon key.
+
+Run `sample_data/seed.sql` in Supabase SQL Editor, then run `demo_usage_migration.sql` to enable demo account tracking.
 
 ### 3. Configure your business
 Edit `config.yaml`:
 ```yaml
 business:
-  name: "Sharma Textile Traders"
+  name: "Your Business Name"
   gstin: "08ABCDE1234F1Z5"
   currency: "₹"
   state: "Rajasthan"
 ```
 
 ### 4. Deploy to Streamlit Cloud
-```
-streamlit.io/cloud → New App → connect repo → main file: app.py
-```
-Add secrets (see Login section above).
+Go to [share.streamlit.io](https://share.streamlit.io) → New App → connect repo → main file: `app.py`.
 
-### 5. Inject auth guard into all pages (one-time, run locally)
+Set all credentials in **Streamlit Cloud → App Settings → Secrets** (see `secrets.toml.example`).
+
+### 5. Inject auth guard into all pages (run once locally)
 ```bash
 python patch_auth.py
 git add -A && git commit -m "security: auth guard all pages" && git push
 ```
-
-Done. ✅
 
 ---
 
@@ -133,9 +85,10 @@ Done. ✅
 
 ```
 indian-sme-crm-template/
-├── app.py                          # Entry point + auth + home dashboard
-├── config.yaml                     # Business config
-├── patch_auth.py                   # One-time: injects login guard into all pages
+├── app.py                           # Entry point + auth + home dashboard
+├── config.yaml                      # Business config
+├── patch_auth.py                    # One-time: injects login guard into all pages
+├── demo_usage_migration.sql         # Supabase migration for demo account tracking
 ├── pages/
 │   ├── 06_GST_Invoices.py
 │   ├── 08_Ad_Tracker.py
@@ -148,12 +101,13 @@ indian-sme-crm-template/
 │   ├── 15_Email_Tracker.py
 │   ├── 16_Website_Manager.py
 │   ├── 17_Promotions.py
-│   ├── 18_Supply_Chain_Global.py   # ★ Global buyers/suppliers + dual inventory
-│   ├── 19_Finance_Accounting.py    # ★ P&L + GST + cashflow
-│   └── 20_Marketing_Growth.py      # ★ Campaigns + growth metrics + content
+│   ├── 18_Supply_Chain_Global.py    # ★ Global buyers/suppliers + dual inventory
+│   ├── 19_Finance_Accounting.py     # ★ P&L + GST + cashflow
+│   ├── 20_Marketing_Growth.py       # ★ Campaigns + growth metrics + content
+│   └── 21_Admin_Panel.py            # ★ Demo account manager (admin only)
 ├── utils/
-│   ├── auth.py                     # Auth + 7 temp demo accounts (secrets-based)
-│   ├── auth_guard.py               # Single-import login guard for pages
+│   ├── auth.py                      # Auth + temp demo accounts (Supabase-persisted)
+│   ├── auth_guard.py                # Single-import login guard for pages
 │   ├── db.py
 │   ├── config_loader.py
 │   ├── invoice_gen.py
